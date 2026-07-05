@@ -1,5 +1,7 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../models/item.dart';
 import '../models/customer.dart';
 import '../models/bill.dart';
@@ -23,8 +25,25 @@ class DatabaseHelper {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+    final appDocsDir = await getApplicationDocumentsDirectory();
+    final dbDir = join(appDocsDir.path, 'El Mohandes Warehouse');
+    await Directory(dbDir).create(recursive: true);
+    final path = join(dbDir, filePath);
+
+    final dbExists = await File(path).exists();
+    if (!dbExists) {
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final prePopulatedDbPath = join(exeDir, '.dart_tool', 'sqflite_common_ffi', 'databases', 'warehouse.db');
+      
+      if (await File(prePopulatedDbPath).exists()) {
+        await File(prePopulatedDbPath).copy(path);
+      } else {
+        final devDbPath = join(Directory.current.path, '.dart_tool', 'sqflite_common_ffi', 'databases', 'warehouse.db');
+        if (await File(devDbPath).exists()) {
+           await File(devDbPath).copy(path);
+        }
+      }
+    }
 
     return await openDatabase(
       path, 
