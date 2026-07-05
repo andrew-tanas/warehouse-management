@@ -15,6 +15,8 @@ import 'screens/bills_screen.dart';
 import 'screens/create_bill_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
   if (Platform.isWindows || Platform.isLinux) {
     // Initialize FFI for Windows/Linux
     sqfliteFfiInit();

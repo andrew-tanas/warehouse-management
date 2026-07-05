@@ -25,8 +25,14 @@ class DatabaseHelper {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     
-    final appDocsDir = await getApplicationDocumentsDirectory();
-    final dbDir = join(appDocsDir.path, 'El Mohandes Warehouse');
+    String dbDir;
+    try {
+      final appDocsDir = await getApplicationDocumentsDirectory();
+      dbDir = join(appDocsDir.path, 'El Mohandes Warehouse');
+    } catch (e) {
+      dbDir = join(Directory.current.path, '.dart_tool', 'sqflite_common_ffi', 'databases');
+    }
+    
     await Directory(dbDir).create(recursive: true);
     final path = join(dbDir, filePath);
 
