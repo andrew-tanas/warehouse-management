@@ -54,6 +54,16 @@ notes:
 2- prices list
 3- add search bars
 
+1- on the adding and reducing items buttons I want to add an optinal date field to write the date and if it's empty put date now and a feild called notes to write a note about it
+2- I want to make a history for the items when I click on any items it takes me to a page with its history. I want the history to show me the deteils about the adding or reducing or taking amount with its date and note to show the note from adding or reducing button or the bill and tell me the number and date and name of the customer of the bill
+3- in the customer payment I want to add an optinal date field to write the date and if it's empty put date now
+
+1- now I want to make a feature to extract a customer statment and print it as pdf ( put a button on the customer history for this ) I want the statment to show in the beginning the initial debt then the operations based on the date for example: to show 20000(initial balance) then 2000(a bill with date: 17/2/2026) new balance: 22000 then show 4000(a payment with note: , date: 20/5/2026) then show the current balance. and I want you to make the translation in arabic as previous naming conventions
+
+1- in creating bill I want to allow repeating the Items in one bill 
+2- I want in the bill to add an optinal column called note for each item and I want if I write any note for any item this column appears and if I didn't write any note on this column I want it not to appear on the bill printed
+
+1- I want in items page I want to make a feature, add a button to print the list of items as pdf with the selected columns the user wants and knowing that the prices (custom, wholesaler, retail) I want them to be shown in the pdf as price 
 
 1- in Items page I want to add feature when the user double click on the price of any item it allow the user to change the price 
 2- I want to make the stock amount to allow the flaoting point 

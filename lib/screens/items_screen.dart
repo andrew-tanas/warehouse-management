@@ -343,6 +343,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     List<String> availableColumns = ['id', 'name', 'size', 'retail_price', 'wholesale_price', 'custom_price', 'stock_amount'];
     List<String> selectedColumns = ['id', 'name', 'size', 'stock_amount'];
     List<Item> selectedItemsForPrint = [];
+    TextEditingController? autocompleteController;
 
     showDialog(
       context: context,
@@ -370,9 +371,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           if (!selectedItemsForPrint.any((i) => i.id == selection.id)) {
                             selectedItemsForPrint.add(selection);
                           }
+                          // Clear the text field after a tiny delay so Autocomplete finishes its internal update
+                          Future.delayed(const Duration(milliseconds: 50), () {
+                            autocompleteController?.clear();
+                          });
                         });
                       },
                       fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                        autocompleteController = textEditingController;
                         return TextFormField(
                           controller: textEditingController,
                           focusNode: focusNode,
@@ -381,7 +387,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             filled: true,
                             fillColor: Colors.grey.shade50,
-                            suffixIcon: const Icon(Icons.search),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () => textEditingController.clear(),
+                            ),
                           ),
                         );
                       },
