@@ -9,6 +9,7 @@ import '../db/database_helper.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../services/draft_service.dart';
 
 class CreateBillScreen extends StatefulWidget {
   const CreateBillScreen({super.key});
@@ -47,6 +48,11 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
         _editingBill = args;
       } else if (args is Customer) {
         _selectedCustomer = args;
+      } else if (args is DraftBill) {
+        _selectedCustomer = args.customer;
+        _billItems = List.from(args.items);
+        _discountPercent = args.discountPercent;
+        _discountController.text = _discountPercent.toStringAsFixed(2);
       }
       _isInit = true;
     }
@@ -514,9 +520,33 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
         _selectedCustomer?.genre == 'normal';
     bool isNormal = _selectedCustomer?.genre == 'normal';
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop && _editingBill == null && result != true) {
+          if (_billItems.isNotEmpty || _selectedCustomer != null) {
+            final draftId = (ModalRoute.of(context)?.settings.arguments is DraftBill)
+                ? (ModalRoute.of(context)!.settings.arguments as DraftBill).id
+                : DateTime.now().millisecondsSinceEpoch.toString();
+                
+            DraftService.saveDraft(DraftBill(
+              id: draftId,
+              customer: _selectedCustomer,
+              items: _billItems,
+              discountPercent: _discountPercent,
+              dateCreated: DateTime.now(),
+            ));
+          }
+        } else if (didPop && result == true) {
+           // If saved successfully, and we were editing a draft, delete the draft
+           if (ModalRoute.of(context)?.settings.arguments is DraftBill) {
+             DraftService.deleteDraft((ModalRoute.of(context)!.settings.arguments as DraftBill).id);
+           }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade100,
+        appBar: AppBar(
         title: Text(
           AppLocalizations.of(context).translate('create_bill'),
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -908,66 +938,64 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  if (isWholesalerOrNormal) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(
-                              context,
-                            ).translate('discount_percent'),
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(
+                            context,
+                          ).translate('discount_percent'),
+                          style: const TextStyle(fontSize: 16),
                         ),
-                        SizedBox(
-                          width: 100,
-                          child: TextField(
-                            controller: _discountController,
-                            decoration: const InputDecoration(
-                              prefixText: '% ',
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 8,
-                              ),
-                              border: OutlineInputBorder(),
+                      ),
+                      SizedBox(
+                        width: 100,
+                        child: TextField(
+                          controller: _discountController,
+                          decoration: const InputDecoration(
+                            prefixText: '% ',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
                             ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                RegExp(r'^\d+\.?\d*'),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              setState(() {
-                                _discountPercent = double.tryParse(val) ?? 0.0;
-                                if (_discountPercent > 100)
-                                  _discountPercent = 100;
-                              });
-                            },
+                            border: OutlineInputBorder(),
                           ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d*'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _discountPercent = double.tryParse(val) ?? 0.0;
+                              if (_discountPercent > 100)
+                                _discountPercent = 100;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (_discountPercent > 0)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).translate('discount'),
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        Text(
+                          '-${_discountAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(color: Colors.red),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    if (_discountPercent > 0)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).translate('discount'),
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          Text(
-                            '-${_discountAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ],
-                      ),
-                    const SizedBox(height: 16),
-                  ],
+                  const SizedBox(height: 16),
                   const Divider(thickness: 2),
                   const SizedBox(height: 16),
                   Row(
@@ -1021,6 +1049,6 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 }

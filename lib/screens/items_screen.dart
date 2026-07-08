@@ -483,59 +483,30 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Autocomplete<Item>(
-                      displayStringForOption: (Item option) =>
-                          '${option.name} - ${option.size}',
-                      optionsBuilder: (TextEditingValue textEditingValue) {
-                        if (textEditingValue.text.isEmpty) {
-                          return items;
-                        }
-                        return items.where(
-                          (item) => ('${item.name} - ${item.size}')
-                              .toLowerCase()
-                              .contains(textEditingValue.text.toLowerCase()),
-                        );
-                      },
-                      onSelected: (Item selection) {
-                        setState(() {
-                          if (!selectedItemsForPrint.any(
-                            (i) => i.id == selection.id,
-                          )) {
-                            selectedItemsForPrint.add(selection);
-                          }
-                          // Clear the text field after a tiny delay so Autocomplete finishes its internal update
-                          Future.delayed(const Duration(milliseconds: 50), () {
-                            autocompleteController?.clear();
-                          });
-                        });
-                      },
-                      fieldViewBuilder:
-                          (
-                            context,
-                            textEditingController,
-                            focusNode,
-                            onFieldSubmitted,
-                          ) {
-                            autocompleteController = textEditingController;
-                            return TextFormField(
-                              controller: textEditingController,
-                              focusNode: focusNode,
-                              decoration: InputDecoration(
-                                labelText:
-                                    '${AppLocalizations.of(context).translate('select_item')} (Optional)',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                filled: true,
-                                fillColor: Colors.grey.shade50,
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () =>
-                                      textEditingController.clear(),
-                                ),
-                              ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return DropdownMenu<Item>(
+                          width: constraints.maxWidth,
+                          enableSearch: true,
+                          enableFilter: true,
+                          label: Text('${AppLocalizations.of(context).translate('select_item')} (Optional)'),
+                          dropdownMenuEntries: items.map((item) {
+                            return DropdownMenuEntry<Item>(
+                              value: item,
+                              label: '${item.name} - ${item.size}',
                             );
+                          }).toList(),
+                          onSelected: (Item? selection) {
+                            if (selection != null) {
+                              setState(() {
+                                if (!selectedItemsForPrint.any((i) => i.id == selection.id)) {
+                                  selectedItemsForPrint.add(selection);
+                                }
+                              });
+                            }
                           },
+                        );
+                      }
                     ),
                     if (selectedItemsForPrint.isNotEmpty)
                       Padding(

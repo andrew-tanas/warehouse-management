@@ -1,4 +1,5 @@
 import 'package:pdf/pdf.dart';
+import 'dart:math' as math;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/bill.dart';
@@ -70,6 +71,11 @@ class PdfGenerator {
       return row;
     }).toList();
 
+    if (isArabic) {
+      headers = headers.reversed.toList();
+      data = data.map((row) => row.reversed.toList()).toList();
+    }
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
@@ -79,15 +85,6 @@ class PdfGenerator {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Center(
-                child: pw.Text(
-                  'مصنع المهندس',
-                  style: pw.TextStyle(
-                    fontSize: 28,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
               pw.SizedBox(height: 10),
               pw.Center(
                 child: pw.Text(
@@ -120,10 +117,10 @@ class PdfGenerator {
                     ? pw.Alignment.centerLeft
                     : pw.Alignment.centerRight,
                 cellAlignments: {
-                  0: isArabic
+                  isArabic ? headers.length - 1 : 0: isArabic
                       ? pw.Alignment.centerRight
                       : pw.Alignment.centerLeft,
-                  1: isArabic
+                  isArabic ? headers.length - 2 : 1: isArabic
                       ? pw.Alignment.centerRight
                       : pw.Alignment.centerLeft,
                 },
@@ -307,6 +304,18 @@ class PdfGenerator {
       currentBalance.toStringAsFixed(2),
     ]);
 
+    List<String> headers = [
+      isArabic ? 'التاريخ' : 'Date',
+      isArabic ? 'العملية' : 'Operation',
+      isArabic ? 'المبلغ' : 'Amount',
+      isArabic ? 'الرصيد' : 'Balance',
+    ];
+
+    if (isArabic) {
+      headers = headers.reversed.toList();
+      tableData = tableData.map((row) => row.reversed.toList()).toList();
+    }
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
@@ -316,15 +325,6 @@ class PdfGenerator {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Center(
-                child: pw.Text(
-                  'مصنع المهندس',
-                  style: pw.TextStyle(
-                    fontSize: 28,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
               pw.SizedBox(height: 10),
               pw.Center(
                 child: pw.Text(
@@ -342,12 +342,7 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 20),
               pw.TableHelper.fromTextArray(
-                headers: [
-                  isArabic ? 'التاريخ' : 'Date',
-                  isArabic ? 'العملية' : 'Operation',
-                  isArabic ? 'المبلغ' : 'Amount',
-                  isArabic ? 'الرصيد' : 'Balance',
-                ],
+                headers: headers,
                 data: tableData,
                 headerStyle: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
@@ -360,8 +355,8 @@ class PdfGenerator {
                     ? pw.Alignment.centerLeft
                     : pw.Alignment.centerRight,
                 cellAlignments: {
-                  0: pw.Alignment.center,
-                  1: isArabic
+                  isArabic ? 3 : 0: pw.Alignment.center,
+                  isArabic ? 2 : 1: isArabic
                       ? pw.Alignment.centerRight
                       : pw.Alignment.centerLeft,
                 },
@@ -393,52 +388,119 @@ class PdfGenerator {
 
     final pdf = pw.Document();
 
-    List<String> headers = [];
-    for (String col in selectedColumns) {
-      if (col == 'retail_price' ||
-          col == 'wholesale_price' ||
-          col == 'custom_price') {
-        headers.add(isArabic ? 'السعر' : 'Price');
-      } else if (col == 'id') {
-        headers.add('ID');
-      } else {
-        headers.add(l10n.translate(col));
-      }
+    Map<String, List<Item>> groupedItems = {};
+    for (var item in items) {
+      groupedItems.putIfAbsent(item.name, () => []).add(item);
     }
 
-    List<List<String>> data = items.map((item) {
-      List<String> row = [];
+    List<pw.Widget> allBlocks = [];
+    for (var entry in groupedItems.entries) {
+      String itemName = entry.key;
+      List<Item> groupItems = entry.value;
+
+      List<pw.Widget> groupRows = groupItems.map((item) {
+        List<pw.Widget> cells = [];
+        for (String col in selectedColumns) {
+          if (col == 'name') continue;
+          String text = '';
+          if (col == 'id') text = item.id.toString();
+          else if (col == 'size') text = item.size;
+          else if (col == 'retail_price') text = item.retailPrice.toStringAsFixed(2);
+          else if (col == 'wholesale_price') text = item.wholesalePrice.toStringAsFixed(2);
+          else if (col == 'custom_price') text = (item.customPrice ?? 0).toStringAsFixed(2);
+          else if (col == 'stock_amount') text = item.stockAmount.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '');
+          
+          cells.add(
+            pw.Expanded(
+              child: pw.Container(
+                padding: const pw.EdgeInsets.all(2),
+                decoration: pw.BoxDecoration(border: pw.Border(left: pw.BorderSide(width: isArabic ? 0 : 1), right: pw.BorderSide(width: isArabic ? 1 : 0))),
+                child: pw.Center(child: pw.Text(text, style: pw.TextStyle(fontSize: 10, fontFallback: [font]))),
+              )
+            )
+          );
+        }
+
+        return pw.Container(
+          decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+          child: pw.Row(children: cells)
+        );
+      }).toList();
+
+      List<pw.Widget> headerCells = [];
       for (String col in selectedColumns) {
-        switch (col) {
-          case 'id':
-            row.add(item.id.toString());
-            break;
-          case 'name':
-            row.add(item.name);
-            break;
-          case 'size':
-            row.add(item.size);
-            break;
-          case 'retail_price':
-            row.add(item.retailPrice.toStringAsFixed(2));
-            break;
-          case 'wholesale_price':
-            row.add(item.wholesalePrice.toStringAsFixed(2));
-            break;
-          case 'custom_price':
-            row.add((item.customPrice ?? 0).toStringAsFixed(2));
-            break;
-          case 'stock_amount':
-            row.add(
-              item.stockAmount
-                  .toStringAsFixed(2)
-                  .replaceAll(RegExp(r'\.00$'), ''),
-            );
-            break;
+        if (col == 'name') continue;
+        String text = col;
+        if (col == 'retail_price' || col == 'wholesale_price' || col == 'custom_price') text = isArabic ? 'السعر' : 'Price';
+        else if (col == 'id') text = 'ID';
+        else text = l10n.translate(col);
+        
+        headerCells.add(
+          pw.Expanded(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.all(2),
+              decoration: pw.BoxDecoration(border: pw.Border(left: pw.BorderSide(width: isArabic ? 0 : 1), right: pw.BorderSide(width: isArabic ? 1 : 0))),
+              child: pw.Center(child: pw.Text(text, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, fontFallback: [fontBold]))),
+            )
+          )
+        );
+      }
+
+      pw.Widget groupWidget = pw.Container(
+        decoration: pw.BoxDecoration(border: pw.Border.all(width: 1)),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            pw.Container(
+              width: 25,
+              color: PdfColors.blue100,
+              child: pw.Center(
+                child: pw.Transform.rotateBox(
+                  angle: isArabic ? math.pi / 2 : -math.pi / 2,
+                  child: pw.Text(itemName, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, fontFallback: [fontBold])),
+                )
+              )
+            ),
+            pw.Container(width: 1, color: PdfColors.black),
+            pw.Expanded(
+              child: pw.Column(
+                children: [
+                   pw.Container(
+                     color: PdfColors.grey300,
+                     decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                     child: pw.Row(children: headerCells),
+                   ),
+                   ...groupRows,
+                ]
+              )
+            ),
+          ]
+        )
+      );
+
+      allBlocks.add(groupWidget);
+    }
+
+    List<pw.Widget> rowChunks = [];
+    for (int i = 0; i < allBlocks.length; i += 4) {
+      List<pw.Widget> rowChildren = [];
+      for (int j = 0; j < 4; j++) {
+        if (i + j < allBlocks.length) {
+          rowChildren.add(pw.Expanded(child: pw.Padding(padding: const pw.EdgeInsets.all(2), child: allBlocks[i + j])));
+        } else {
+          rowChildren.add(pw.Expanded(child: pw.SizedBox()));
         }
       }
-      return row;
-    }).toList();
+      rowChunks.add(
+        pw.Container(
+          margin: const pw.EdgeInsets.only(bottom: 5),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: rowChildren,
+          ),
+        )
+      );
+    }
 
     pdf.addPage(
       pw.MultiPage(
@@ -447,15 +509,6 @@ class PdfGenerator {
         theme: pw.ThemeData.withFont(base: font, bold: fontBold),
         build: (pw.Context pdfContext) {
           return [
-            pw.Center(
-              child: pw.Text(
-                'مصنع المهندس',
-                style: pw.TextStyle(
-                  fontSize: 28,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ),
             pw.SizedBox(height: 10),
             pw.Center(
               child: pw.Text(
@@ -467,28 +520,7 @@ class PdfGenerator {
               ),
             ),
             pw.SizedBox(height: 20),
-            pw.TableHelper.fromTextArray(
-              headers: headers,
-              data: data,
-              headerStyle: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontFallback: [fontBold],
-              ),
-              headerDecoration: const pw.BoxDecoration(
-                color: PdfColors.grey300,
-              ),
-              cellAlignment: isArabic
-                  ? pw.Alignment.centerLeft
-                  : pw.Alignment.centerRight,
-              cellAlignments: {
-                for (int i = 0; i < selectedColumns.length; i++)
-                  if (selectedColumns[i] == 'name')
-                    i: isArabic
-                        ? pw.Alignment.centerRight
-                        : pw.Alignment.centerLeft,
-              },
-              cellStyle: pw.TextStyle(fontFallback: [font]),
-            ),
+            ...rowChunks,
           ];
         },
       ),

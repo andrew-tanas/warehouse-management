@@ -11,6 +11,8 @@ import '../models/customer.dart';
 import '../providers/customer_provider.dart';
 import '../models/bill.dart';
 
+import '../services/draft_service.dart';
+
 class BillsScreen extends StatefulWidget {
   const BillsScreen({super.key});
 
@@ -24,6 +26,59 @@ class _BillsScreenState extends State<BillsScreen> {
     super.initState();
     Future.microtask(
       () => Provider.of<BillProvider>(context, listen: false).loadBills(),
+    );
+  }
+
+  void _showDraftsDialog(BuildContext context) async {
+    final drafts = await DraftService.getDrafts();
+    if (drafts.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No drafts available')),
+      );
+      return;
+    }
+    
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Drafts'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: drafts.length,
+              itemBuilder: (context, index) {
+                final draft = drafts[index];
+                return ListTile(
+                  title: Text(draft.customer?.name ?? 'No Customer'),
+                  subtitle: Text('${draft.items.length} items - ${DateFormat('yyyy-MM-dd HH:mm').format(draft.dateCreated)}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      await DraftService.deleteDraft(draft.id);
+                      Navigator.pop(context);
+                      _showDraftsDialog(context);
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/create_bill', arguments: draft);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            )
+          ],
+        );
+      }
     );
   }
 
@@ -41,6 +96,13 @@ class _BillsScreenState extends State<BillsScreen> {
           elevation: 0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.drafts),
+              tooltip: 'Drafts',
+              onPressed: () => _showDraftsDialog(context),
+            )
+          ],
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => Navigator.pushNamed(context, '/create_bill'),
