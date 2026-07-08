@@ -61,13 +61,13 @@ class DatabaseHelper {
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute('ALTER TABLE items ADD COLUMN customPrice REAL');
-      await db.execute('ALTER TABLE bill_items ADD COLUMN itemSize TEXT NOT NULL DEFAULT ""');
-      await db.execute('ALTER TABLE bill_items ADD COLUMN itemPrice REAL NOT NULL DEFAULT 0.0');
+      try { await db.execute('ALTER TABLE items ADD COLUMN customPrice REAL'); } catch (_) {}
+      try { await db.execute('ALTER TABLE bill_items ADD COLUMN itemSize TEXT NOT NULL DEFAULT ""'); } catch (_) {}
+      try { await db.execute('ALTER TABLE bill_items ADD COLUMN itemPrice REAL NOT NULL DEFAULT 0.0'); } catch (_) {}
     }
     if (oldVersion < 3) {
       await db.execute('''
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   customerId INTEGER NOT NULL,
   amount REAL NOT NULL,
@@ -77,11 +77,11 @@ CREATE TABLE payments (
 ''');
     }
     if (oldVersion < 4) {
-      await db.execute('ALTER TABLE bills ADD COLUMN customerBillNumber INTEGER NOT NULL DEFAULT 0');
+      try { await db.execute('ALTER TABLE bills ADD COLUMN customerBillNumber INTEGER NOT NULL DEFAULT 0'); } catch (_) {}
     }
     if (oldVersion < 5) {
       await db.execute('''
-CREATE TABLE item_history (
+CREATE TABLE IF NOT EXISTS item_history (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   itemId INTEGER NOT NULL,
   date TEXT NOT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE item_history (
 ''');
     }
     if (oldVersion < 6) {
-      await db.execute('ALTER TABLE bill_items ADD COLUMN note TEXT');
+      try { await db.execute('ALTER TABLE bill_items ADD COLUMN note TEXT'); } catch (_) {}
     }
     if (oldVersion < 7) {
       try { await db.execute('ALTER TABLE vendors RENAME TO customers'); } catch (_) {}

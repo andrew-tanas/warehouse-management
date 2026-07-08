@@ -8,7 +8,7 @@ import '../providers/bill_provider.dart';
 import '../models/bill.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -48,58 +48,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 32),
               Expanded(
                 child: Consumer3<CustomerProvider, ItemProvider, BillProvider>(
-                  builder: (context, customerProvider, itemProvider, billProvider, child) {
-                    int totalCustomers = customerProvider.customers.length;
-                    int totalItemsCount = itemProvider.items.length;
-                    return SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 24,
-                            mainAxisSpacing: 24,
-                            childAspectRatio: 2.5,
+                  builder:
+                      (
+                        context,
+                        customerProvider,
+                        itemProvider,
+                        billProvider,
+                        child,
+                      ) {
+                        int totalCustomers = customerProvider.customers.length;
+                        int totalItemsCount = itemProvider.items.length;
+                        return SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _InteractiveStatCard(
-                                title: AppLocalizations.of(context).translate('customers'),
-                                value: totalCustomers.toString(),
-                                icon: Icons.people,
-                                color: const Color(0xFF2196F3),
+                              GridView.count(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 24,
+                                mainAxisSpacing: 24,
+                                childAspectRatio: 2.5,
+                                children: [
+                                  _InteractiveStatCard(
+                                    title: AppLocalizations.of(
+                                      context,
+                                    ).translate('customers'),
+                                    value: totalCustomers.toString(),
+                                    icon: Icons.people,
+                                    color: const Color(0xFF2196F3),
+                                  ),
+                                  _InteractiveStatCard(
+                                    title: AppLocalizations.of(
+                                      context,
+                                    ).translate('items'),
+                                    value: totalItemsCount.toString(),
+                                    icon: Icons.inventory,
+                                    color: const Color(0xFFFF9800),
+                                  ),
+                                  _InteractiveStatCard(
+                                    title: AppLocalizations.of(
+                                      context,
+                                    ).translate('bills'),
+                                    value: billProvider.bills.length.toString(),
+                                    icon: Icons.receipt,
+                                    color: Colors.purple,
+                                  ),
+                                ],
                               ),
-                              _InteractiveStatCard(
-                                title: AppLocalizations.of(context).translate('items'),
-                                value: totalItemsCount.toString(),
-                                icon: Icons.inventory,
-                                color: const Color(0xFFFF9800),
+                              const SizedBox(height: 40),
+                              Text(
+                                '${AppLocalizations.of(context).translate('bills_history')} (Recent)',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2C3E50),
+                                ),
                               ),
-                              _InteractiveStatCard(
-                                title: AppLocalizations.of(context).translate('bills'),
-                                value: billProvider.bills.length.toString(),
-                                icon: Icons.receipt,
-                                color: Colors.purple,
+                              const SizedBox(height: 20),
+                              _buildRecentBillsTable(
+                                billProvider.bills.reversed.take(5).toList(),
+                                context,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 40),
-                          Text(
-                            AppLocalizations.of(context).translate('bills_history') + ' (Recent)',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2C3E50),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildRecentBillsTable(billProvider.bills.reversed.take(5).toList(), context),
-                        ],
-                      ),
-                    );
-                  },
+                        );
+                      },
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -109,7 +125,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildRecentBillsTable(List<Bill> recentBills, BuildContext context) {
     if (recentBills.isEmpty) {
-      return Center(child: Text(AppLocalizations.of(context).translate('no_bills')));
+      return Center(
+        child: Text(AppLocalizations.of(context).translate('no_bills')),
+      );
     }
     return Container(
       decoration: BoxDecoration(
@@ -126,20 +144,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: DataTable(
-          headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
+          headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
           columns: [
-            DataColumn(label: Text('ID', style: const TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text(AppLocalizations.of(context).translate('customer_name'), style: const TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Date', style: const TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text(AppLocalizations.of(context).translate('total'), style: const TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(
+              label: Text(
+                'ID',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                AppLocalizations.of(context).translate('customer_name'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Date',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                AppLocalizations.of(context).translate('total'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
           rows: recentBills.map((bill) {
-            return DataRow(cells: [
-              DataCell(Text(bill.id.toString())),
-              DataCell(Text(bill.customerName)),
-              DataCell(Text('${bill.date.year}-${bill.date.month.toString().padLeft(2, '0')}-${bill.date.day.toString().padLeft(2, '0')}')),
-              DataCell(Text(bill.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
-            ]);
+            return DataRow(
+              cells: [
+                DataCell(Text(bill.id.toString())),
+                DataCell(Text(bill.customerName)),
+                DataCell(
+                  Text(
+                    '${bill.date.year}-${bill.date.month.toString().padLeft(2, '0')}-${bill.date.day.toString().padLeft(2, '0')}',
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    bill.total.toStringAsFixed(2),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ),
+              ],
+            );
           }).toList(),
         ),
       ),
@@ -154,12 +206,12 @@ class _InteractiveStatCard extends StatefulWidget {
   final Color color;
 
   const _InteractiveStatCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   State<_InteractiveStatCard> createState() => _InteractiveStatCardState();
@@ -225,7 +277,7 @@ class _InteractiveStatCardState extends State<_InteractiveStatCard> {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

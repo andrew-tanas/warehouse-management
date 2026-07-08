@@ -11,10 +11,10 @@ class AppNavigation extends StatelessWidget {
   final int selectedIndex;
 
   const AppNavigation({
-    Key? key,
+    super.key,
     required this.child,
     required this.selectedIndex,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -51,8 +51,14 @@ class AppNavigation extends StatelessWidget {
               );
             },
             backgroundColor: const Color(0xFF1E1E2C),
-            unselectedIconTheme: const IconThemeData(color: Colors.white54, opacity: 1),
-            selectedIconTheme: const IconThemeData(color: Color(0xFF6C63FF), opacity: 1),
+            unselectedIconTheme: const IconThemeData(
+              color: Colors.white54,
+              opacity: 1,
+            ),
+            selectedIconTheme: const IconThemeData(
+              color: Color(0xFF6C63FF),
+              opacity: 1,
+            ),
             unselectedLabelTextStyle: const TextStyle(color: Colors.white54),
             selectedLabelTextStyle: const TextStyle(
               color: Color(0xFF6C63FF),
@@ -63,12 +69,16 @@ class AppNavigation extends StatelessWidget {
               NavigationRailDestination(
                 icon: const Icon(Icons.dashboard_outlined),
                 selectedIcon: const Icon(Icons.dashboard),
-                label: Text(AppLocalizations.of(context).translate('dashboard')),
+                label: Text(
+                  AppLocalizations.of(context).translate('dashboard'),
+                ),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.people_outline),
                 selectedIcon: const Icon(Icons.people),
-                label: Text(AppLocalizations.of(context).translate('customers')),
+                label: Text(
+                  AppLocalizations.of(context).translate('customers'),
+                ),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.inventory_2_outlined),
@@ -84,7 +94,10 @@ class AppNavigation extends StatelessWidget {
                   child: IconButton(
                     icon: const Icon(Icons.language, color: Colors.white54),
                     onPressed: () {
-                      Provider.of<LocaleProvider>(context, listen: false).toggleLocale();
+                      Provider.of<LocaleProvider>(
+                        context,
+                        listen: false,
+                      ).toggleLocale();
                     },
                     tooltip: AppLocalizations.of(context).translate('language'),
                   ),
