@@ -499,6 +499,7 @@ class PdfGenerator {
                 child: pw.Center(
                   child: pw.Transform.rotateBox(
                     angle: isArabic ? math.pi / 2 : -math.pi / 2,
+                    unconstrained: true,
                     child: pw.Text(
                       itemName,
                       style: pw.TextStyle(
