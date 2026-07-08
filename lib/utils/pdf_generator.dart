@@ -485,31 +485,32 @@ class PdfGenerator {
         );
       }
 
-      pw.Widget groupWidget = pw.Container(
-        decoration: pw.BoxDecoration(border: pw.Border.all(width: 1)),
-        child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-          children: [
-            pw.Container(
-              width: 25,
-              color: PdfColors.blue100,
-              child: pw.Center(
-                child: pw.Transform.rotateBox(
-                  angle: isArabic ? math.pi / 2 : -math.pi / 2,
-                  child: pw.Text(
-                    itemName,
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      fontFallback: [fontBold],
+      pw.Widget groupWidget = pw.Table(
+        border: pw.TableBorder.all(width: 1),
+        columnWidths: {
+          0: const pw.FixedColumnWidth(25),
+          1: const pw.FlexColumnWidth(),
+        },
+        children: [
+          pw.TableRow(
+            children: [
+              pw.Container(
+                color: PdfColors.blue100,
+                child: pw.Center(
+                  child: pw.Transform.rotateBox(
+                    angle: isArabic ? math.pi / 2 : -math.pi / 2,
+                    child: pw.Text(
+                      itemName,
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        fontFallback: [fontBold],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            pw.Container(width: 1, color: PdfColors.black),
-            pw.Expanded(
-              child: pw.Column(
+              pw.Column(
                 children: [
                   pw.Container(
                     decoration: const pw.BoxDecoration(
@@ -521,9 +522,9 @@ class PdfGenerator {
                   ...groupRows,
                 ],
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       );
 
       allBlocks.add(groupWidget);
