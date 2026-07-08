@@ -870,10 +870,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         borderRadius: BorderRadius.circular(16),
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.only(bottom: 80.0),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: DataTable(
-                              showCheckboxColumn: false,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                                  child: DataTable(
+                                    showCheckboxColumn: false,
                               headingRowColor: WidgetStateProperty.resolveWith(
                                 (states) => Colors.grey.shade50,
                               ),
@@ -1100,6 +1104,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                   ],
                                 );
                               }).toList(),
+                            ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),

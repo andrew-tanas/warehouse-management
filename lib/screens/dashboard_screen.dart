@@ -143,8 +143,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.minWidth),
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
           columns: [
             DataColumn(
               label: Text(
@@ -193,6 +199,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             );
           }).toList(),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
