@@ -138,23 +138,34 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     ),
                   ),
                   onPressed: () {
+                    final cName = nameController.text.trim();
+                    if (cName.isEmpty) return;
+
+                    final provider = Provider.of<CustomerProvider>(context, listen: false);
+                    final exists = provider.customers.any((c) => 
+                      c.name.trim().toLowerCase() == cName.toLowerCase() && c.id != customer?.id
+                    );
+
+                    if (exists) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context).translate('customer_name') + ' already exists'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
                     final newCustomer = Customer(
                       id: customer?.id,
-                      name: nameController.text.trim(),
+                      name: cName,
                       genre: genre,
-                      totalDebt:
-                          double.tryParse(debtController.text.trim()) ?? 0.0,
+                      totalDebt: double.tryParse(debtController.text.trim()) ?? 0.0,
                     );
                     if (customer == null) {
-                      Provider.of<CustomerProvider>(
-                        context,
-                        listen: false,
-                      ).addCustomer(newCustomer);
+                      provider.addCustomer(newCustomer);
                     } else {
-                      Provider.of<CustomerProvider>(
-                        context,
-                        listen: false,
-                      ).updateCustomer(newCustomer);
+                      provider.updateCustomer(newCustomer);
                     }
                     Navigator.pop(context);
                   },

@@ -231,6 +231,24 @@ class _ItemsScreenState extends State<ItemsScreen> {
               onPressed: () {
                 if (formKey.currentState!.validate()) {
                   formKey.currentState!.save();
+
+                  final provider = Provider.of<ItemProvider>(context, listen: false);
+                  final exists = provider.items.any((i) => 
+                    i.name.trim().toLowerCase() == name.trim().toLowerCase() && 
+                    i.size.trim().toLowerCase() == size.trim().toLowerCase() && 
+                    i.id != item?.id
+                  );
+
+                  if (exists) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Item with this Name and Size already exists'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
                   final newItem = Item(
                     id: item?.id,
                     name: name,
@@ -241,15 +259,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     stockAmount: stockAmount,
                   );
                   if (item == null) {
-                    Provider.of<ItemProvider>(
-                      context,
-                      listen: false,
-                    ).addItem(newItem);
+                    provider.addItem(newItem);
                   } else {
-                    Provider.of<ItemProvider>(
-                      context,
-                      listen: false,
-                    ).updateItem(newItem);
+                    provider.updateItem(newItem);
                   }
                   Navigator.of(context).pop();
                 }
@@ -1112,8 +1124,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  );
+                    );
                 },
               ),
             ),
