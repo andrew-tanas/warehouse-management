@@ -487,6 +487,7 @@ class PdfGenerator {
 
       pw.Widget groupWidget = pw.Table(
         border: pw.TableBorder.all(width: 1),
+        defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
         columnWidths: {
           0: const pw.FixedColumnWidth(25),
           1: const pw.FlexColumnWidth(),
@@ -495,7 +496,6 @@ class PdfGenerator {
           pw.TableRow(
             children: [
               pw.Container(
-                color: PdfColors.blue100,
                 child: pw.Center(
                   child: pw.Transform.rotateBox(
                     angle: isArabic ? math.pi / 2 : -math.pi / 2,
@@ -515,7 +515,6 @@ class PdfGenerator {
                 children: [
                   pw.Container(
                     decoration: const pw.BoxDecoration(
-                      color: PdfColors.grey300,
                       border: pw.Border(bottom: pw.BorderSide()),
                     ),
                     child: pw.Row(children: headerCells),
