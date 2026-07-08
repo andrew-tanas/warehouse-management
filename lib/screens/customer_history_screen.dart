@@ -11,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import '../utils/pdf_generator.dart';
 import '../providers/customer_provider.dart';
 import '../providers/bill_provider.dart';
+import '../services/draft_service.dart';
 
 class CustomerHistoryScreen extends StatefulWidget {
   final Customer customer;
@@ -24,6 +25,7 @@ class CustomerHistoryScreen extends StatefulWidget {
 class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
   List<Bill> _bills = [];
   List<Payment> _payments = [];
+  List<DraftBill> _drafts = [];
   bool _isLoading = true;
   Customer? _currentCustomer;
 
@@ -49,11 +51,14 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
       final payments = await DatabaseHelper.instance.getPaymentsForCustomer(
         widget.customer.id!,
       );
+      final allDrafts = await DraftService.getDrafts();
+      final drafts = allDrafts.where((d) => d.customer?.id == widget.customer.id).toList();
 
       setState(() {
         _currentCustomer = currentCustomer;
         _bills = bills;
         _payments = payments;
+        _drafts = drafts;
         _isLoading = false;
       });
     } catch (e) {
@@ -528,7 +533,7 @@ CREATE TABLE IF NOT EXISTS payments (
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  flex: 3,
+                  flex: 2,
                   child: _buildSection(
                     title: AppLocalizations.of(
                       context,
@@ -830,6 +835,48 @@ CREATE TABLE IF NOT EXISTS payments (
                                 ),
                               ],
                             ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                Container(width: 1, color: Colors.grey.shade300),
+                Expanded(
+                  flex: 2,
+                  child: _buildSection(
+                    title: 'Drafts',
+                    icon: Icons.drafts,
+                    color: Colors.orange,
+                    isEmpty: _drafts.isEmpty,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _drafts.length,
+                      itemBuilder: (context, index) {
+                        final draft = _drafts[index];
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
+                              child: Icon(Icons.drafts, color: Colors.orange.shade700),
+                            ),
+                            title: Text('${draft.items.length} items', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(DateFormat('MMM dd, yyyy').format(draft.dateCreated)),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                await DraftService.deleteDraft(draft.id);
+                                _loadHistory();
+                              },
+                            ),
+                            onTap: () async {
+                              await Navigator.pushNamed(context, '/create_bill', arguments: draft);
+                              _loadHistory();
+                            },
                           ),
                         );
                       },
