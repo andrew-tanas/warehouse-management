@@ -232,17 +232,25 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 if (formKey.currentState!.validate()) {
                   formKey.currentState!.save();
 
-                  final provider = Provider.of<ItemProvider>(context, listen: false);
-                  final exists = provider.items.any((i) => 
-                    i.name.trim().toLowerCase() == name.trim().toLowerCase() && 
-                    i.size.trim().toLowerCase() == size.trim().toLowerCase() && 
-                    i.id != item?.id
+                  final provider = Provider.of<ItemProvider>(
+                    context,
+                    listen: false,
+                  );
+                  final exists = provider.items.any(
+                    (i) =>
+                        i.name.trim().toLowerCase() ==
+                            name.trim().toLowerCase() &&
+                        i.size.trim().toLowerCase() ==
+                            size.trim().toLowerCase() &&
+                        i.id != item?.id,
                   );
 
                   if (exists) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Item with this Name and Size already exists'),
+                        content: Text(
+                          'Item with this Name and Size already exists',
+                        ),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -459,16 +467,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
   }
 
   void _showPrintDialog(List<Item> items) {
-    List<String> availableColumns = [
-      'id',
-      'name',
-      'size',
+    List<String> priceColumns = [
       'retail_price',
       'wholesale_price',
       'custom_price',
-      'stock_amount',
     ];
-    List<String> selectedColumns = ['id', 'name', 'size', 'stock_amount'];
+    List<String> selectedPrices = ['retail_price'];
     List<Item> selectedItemsForPrint = [];
     TextEditingController? autocompleteController;
 
@@ -523,7 +527,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                 if (textEditingController.text.isEmpty) {
                                   // Trigger the autocomplete options by setting and clearing text
                                   textEditingController.text = ' ';
-                                  textEditingController.selection = TextSelection.collapsed(offset: 0);
+                                  textEditingController.selection =
+                                      TextSelection.collapsed(offset: 0);
                                   Future.microtask(() {
                                     textEditingController.text = '';
                                   });
@@ -567,27 +572,31 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         ),
                       ),
                     const Divider(),
-                    ...availableColumns.map((col) {
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'Select Prices to Print:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    ...priceColumns.map((col) {
                       return CheckboxListTile(
                         title: Text(
-                          col == 'id'
-                              ? 'ID'
-                              : AppLocalizations.of(context).translate(col),
+                          AppLocalizations.of(context).translate(col),
                         ),
-                        value: selectedColumns.contains(col),
+                        value: selectedPrices.contains(col),
                         onChanged: (bool? value) {
                           setState(() {
                             if (value == true) {
-                              selectedColumns.add(col);
-                              // Sort based on original order
-                              selectedColumns.sort(
-                                (a, b) => availableColumns
+                              selectedPrices.add(col);
+                              selectedPrices.sort(
+                                (a, b) => priceColumns
                                     .indexOf(a)
-                                    .compareTo(availableColumns.indexOf(b)),
+                                    .compareTo(priceColumns.indexOf(b)),
                               );
                             } else {
-                              if (selectedColumns.length > 1) {
-                                selectedColumns.remove(col);
+                              if (selectedPrices.length > 1) {
+                                selectedPrices.remove(col);
                               }
                             }
                           });
@@ -612,7 +621,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     await PdfGenerator.printItemsList(
                       context,
                       finalItemsToPrint,
-                      selectedColumns,
+                      ['name', 'size', ...selectedPrices],
                     );
                   },
                   child: Text(
@@ -897,244 +906,267 @@ class _ItemsScreenState extends State<ItemsScreen> {
                               return SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
                                 child: ConstrainedBox(
-                                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                                  constraints: BoxConstraints(
+                                    minWidth: constraints.minWidth,
+                                  ),
                                   child: DataTable(
                                     showCheckboxColumn: false,
-                              headingRowColor: WidgetStateProperty.resolveWith(
-                                (states) => Colors.grey.shade50,
-                              ),
-                              columns: [
-                                const DataColumn(
-                                  label: Text(
-                                    'ID',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('name'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('size'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('retail_price'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('wholesale_price'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('custom_price'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('stock_amount'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).translate('actions'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              rows: filteredItems.map((item) {
-                                return DataRow(
-                                  onSelectChanged: (_) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            ItemHistoryScreen(item: item),
-                                      ),
-                                    );
-                                  },
-                                  cells: [
-                                    DataCell(Text(item.id.toString())),
-                                    DataCell(
-                                      Text(
-                                        item.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
+                                    headingRowColor:
+                                        WidgetStateProperty.resolveWith(
+                                          (states) => Colors.grey.shade50,
+                                        ),
+                                    columns: [
+                                      const DataColumn(
+                                        label: Text(
+                                          'ID',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    DataCell(Text(item.size)),
-                                    DataCell(
-                                      _buildPriceCell(
-                                        item,
-                                        'retail',
-                                        item.retailPrice,
-                                        Colors.green,
-                                      ),
-                                    ),
-                                    DataCell(
-                                      _buildPriceCell(
-                                        item,
-                                        'wholesale',
-                                        item.wholesalePrice,
-                                        Colors.blue,
-                                      ),
-                                    ),
-                                    DataCell(
-                                      _buildPriceCell(
-                                        item,
-                                        'custom',
-                                        item.customPrice,
-                                        Colors.orange,
-                                      ),
-                                    ),
-                                    DataCell(Text(item.stockAmount.toString())),
-                                    DataCell(
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.add_circle_outline,
-                                              color: Colors.green,
-                                            ),
-                                            tooltip: 'Add Stock',
-                                            onPressed: () =>
-                                                _showStockDialog(item, true),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('name'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.remove_circle_outline,
-                                              color: Colors.orange,
-                                            ),
-                                            tooltip: 'Reduce Stock',
-                                            onPressed: () =>
-                                                _showStockDialog(item, false),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('size'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.edit_outlined,
-                                              color: Colors.indigo,
-                                            ),
-                                            tooltip: 'Edit',
-                                            onPressed: () =>
-                                                _showItemDialog(item),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('retail_price'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                              color: Colors.red,
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('wholesale_price'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('custom_price'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('stock_amount'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('actions'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    rows: filteredItems.map((item) {
+                                      return DataRow(
+                                        onSelectChanged: (_) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ItemHistoryScreen(item: item),
                                             ),
-                                            tooltip: 'Delete',
-                                            onPressed: () {
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) => AlertDialog(
-                                                  title: Text(
-                                                    AppLocalizations.of(
-                                                      context,
-                                                    ).translate('delete'),
+                                          );
+                                        },
+                                        cells: [
+                                          DataCell(Text(item.id.toString())),
+                                          DataCell(
+                                            Text(
+                                              item.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(Text(item.size)),
+                                          DataCell(
+                                            _buildPriceCell(
+                                              item,
+                                              'retail',
+                                              item.retailPrice,
+                                              Colors.green,
+                                            ),
+                                          ),
+                                          DataCell(
+                                            _buildPriceCell(
+                                              item,
+                                              'wholesale',
+                                              item.wholesalePrice,
+                                              Colors.blue,
+                                            ),
+                                          ),
+                                          DataCell(
+                                            _buildPriceCell(
+                                              item,
+                                              'custom',
+                                              item.customPrice,
+                                              Colors.orange,
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(item.stockAmount.toString()),
+                                          ),
+                                          DataCell(
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.add_circle_outline,
+                                                    color: Colors.green,
                                                   ),
-                                                  content: Text(
-                                                    'Are you sure you want to delete ${item.name}?',
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(
-                                                            context,
-                                                          ),
-                                                      child: Text(
-                                                        AppLocalizations.of(
-                                                          context,
-                                                        ).translate('cancel'),
-                                                        style: const TextStyle(
-                                                          color: Colors.grey,
-                                                        ),
+                                                  tooltip: 'Add Stock',
+                                                  onPressed: () =>
+                                                      _showStockDialog(
+                                                        item,
+                                                        true,
                                                       ),
-                                                    ),
-                                                    ElevatedButton(
-                                                      style:
-                                                          ElevatedButton.styleFrom(
-                                                            backgroundColor:
-                                                                Colors.red,
-                                                          ),
-                                                      onPressed: () {
-                                                        provider.deleteItem(
-                                                          item.id!,
-                                                        );
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: Text(
-                                                        AppLocalizations.of(
-                                                          context,
-                                                        ).translate('delete'),
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
                                                 ),
-                                              );
-                                            },
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.remove_circle_outline,
+                                                    color: Colors.orange,
+                                                  ),
+                                                  tooltip: 'Reduce Stock',
+                                                  onPressed: () =>
+                                                      _showStockDialog(
+                                                        item,
+                                                        false,
+                                                      ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.edit_outlined,
+                                                    color: Colors.indigo,
+                                                  ),
+                                                  tooltip: 'Edit',
+                                                  onPressed: () =>
+                                                      _showItemDialog(item),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.delete_outline,
+                                                    color: Colors.red,
+                                                  ),
+                                                  tooltip: 'Delete',
+                                                  onPressed: () {
+                                                    showDialog(
+                                                      context: context,
+                                                      builder: (context) => AlertDialog(
+                                                        title: Text(
+                                                          AppLocalizations.of(
+                                                            context,
+                                                          ).translate('delete'),
+                                                        ),
+                                                        content: Text(
+                                                          'Are you sure you want to delete ${item.name}?',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.pop(
+                                                                  context,
+                                                                ),
+                                                            child: Text(
+                                                              AppLocalizations.of(
+                                                                context,
+                                                              ).translate(
+                                                                'cancel',
+                                                              ),
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .grey,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                          ElevatedButton(
+                                                            style:
+                                                                ElevatedButton.styleFrom(
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .red,
+                                                                ),
+                                                            onPressed: () {
+                                                              provider
+                                                                  .deleteItem(
+                                                                    item.id!,
+                                                                  );
+                                                              Navigator.pop(
+                                                                context,
+                                                              );
+                                                            },
+                                                            child: Text(
+                                                              AppLocalizations.of(
+                                                                context,
+                                                              ).translate(
+                                                                'delete',
+                                                              ),
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
+                                      );
+                                    }).toList(),
                                   ),
-                                );
-                              },
-                            ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
-                    );
+                    ),
+                  );
                 },
               ),
             ),
