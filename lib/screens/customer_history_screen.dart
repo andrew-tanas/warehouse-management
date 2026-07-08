@@ -52,7 +52,9 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
         widget.customer.id!,
       );
       final allDrafts = await DraftService.getDrafts();
-      final drafts = allDrafts.where((d) => d.customer?.id == widget.customer.id).toList();
+      final drafts = allDrafts
+          .where((d) => d.customer?.id == widget.customer.id)
+          .toList();
 
       setState(() {
         _currentCustomer = currentCustomer;
@@ -529,454 +531,563 @@ CREATE TABLE IF NOT EXISTS payments (
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: _buildSection(
-                    title: AppLocalizations.of(
-                      context,
-                    ).translate('bills_history'),
-                    icon: Icons.receipt_long,
-                    color: Colors.blue,
-                    isEmpty: _bills.isEmpty,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _bills.length,
-                      itemBuilder: (context, index) {
-                        final bill = _bills[index];
-                        final billNumber = bill.customerBillNumber > 0
-                            ? bill.customerBillNumber
-                            : (index + 1);
-                        return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Theme(
-                            data: Theme.of(
-                              context,
-                            ).copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              tilePadding: const EdgeInsets.all(16.0),
-                              title: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade50,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.receipt,
-                                      color: Colors.blue.shade700,
-                                      size: 28,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+          : DefaultTabController(
+              length: 3,
+              child: Column(
+                children: [
+                  Container(
+                    color: Colors.white,
+                    child: TabBar(
+                      labelColor: Colors.blue,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: Colors.blue,
+                      tabs: [
+                        Tab(
+                          text: AppLocalizations.of(
+                            context,
+                          ).translate('bills_history'),
+                          icon: const Icon(Icons.receipt_long),
+                        ),
+                        const Tab(text: 'Drafts', icon: Icon(Icons.drafts)),
+                        Tab(
+                          text: AppLocalizations.of(
+                            context,
+                          ).translate('payments'),
+                          icon: const Icon(Icons.payment),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildSection(
+                          title: AppLocalizations.of(
+                            context,
+                          ).translate('bills_history'),
+                          icon: Icons.receipt_long,
+                          color: Colors.blue,
+                          isEmpty: _bills.isEmpty,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _bills.length,
+                            itemBuilder: (context, index) {
+                              final bill = _bills[index];
+                              final billNumber = bill.customerBillNumber > 0
+                                  ? bill.customerBillNumber
+                                  : (index + 1);
+                              return Card(
+                                elevation: 2,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Theme(
+                                  data: Theme.of(
+                                    context,
+                                  ).copyWith(dividerColor: Colors.transparent),
+                                  child: ExpansionTile(
+                                    tilePadding: const EdgeInsets.all(16.0),
+                                    title: Row(
                                       children: [
-                                        Text(
-                                          'Bill #$billNumber',
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade50,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.receipt,
+                                            color: Colors.blue.shade700,
+                                            size: 28,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          DateFormat(
-                                            'MMM dd, yyyy - hh:mm a',
-                                          ).format(bill.date),
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Bill #$billNumber',
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                DateFormat(
+                                                  'MMM dd, yyyy - hh:mm a',
+                                                ).format(bill.date),
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                        ),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            if (bill.discountApplied > 0) ...[
+                                              Text(
+                                                '${AppLocalizations.of(context).translate('subtotal')}: ${(bill.total + bill.discountApplied).toStringAsFixed(2)}',
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade700,
+                                                ),
+                                              ),
+                                              Text(
+                                                '${AppLocalizations.of(context).translate('discount')}: ${bill.discountApplied.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  color: Colors.red,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ],
+                                            Text(
+                                              bill.total.toStringAsFixed(2),
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.print,
+                                                color: Colors.black87,
+                                              ),
+                                              tooltip: AppLocalizations.of(
+                                                context,
+                                              ).translate('print_pdf'),
+                                              onPressed: () {
+                                                PdfGenerator.printBill(
+                                                  context,
+                                                  bill,
+                                                  _currentCustomer,
+                                                );
+                                              },
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.edit_outlined,
+                                                color: Colors.orange,
+                                              ),
+                                              tooltip: AppLocalizations.of(
+                                                context,
+                                              ).translate('edit'),
+                                              onPressed: () async {
+                                                await Navigator.pushNamed(
+                                                  context,
+                                                  '/create_bill',
+                                                  arguments: bill,
+                                                );
+                                                _loadHistory();
+                                              },
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                color: Colors.red,
+                                              ),
+                                              tooltip: AppLocalizations.of(
+                                                context,
+                                              ).translate('delete'),
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (ctx) => AlertDialog(
+                                                    title: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      ).translate('delete'),
+                                                    ),
+                                                    content: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      ).translate(
+                                                        'delete_bill_confirm',
+                                                      ),
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(ctx),
+                                                        child: Text(
+                                                          AppLocalizations.of(
+                                                            context,
+                                                          ).translate('cancel'),
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () async {
+                                                          await Provider.of<
+                                                                BillProvider
+                                                              >(
+                                                                context,
+                                                                listen: false,
+                                                              )
+                                                              .deleteBill(
+                                                                bill.id!,
+                                                                bill.customerId,
+                                                                bill.total,
+                                                              );
+                                                          Navigator.pop(ctx);
+                                                          _loadHistory();
+                                                        },
+                                                        child: Text(
+                                                          AppLocalizations.of(
+                                                            context,
+                                                          ).translate('delete'),
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors.red,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      if (bill.discountApplied > 0) ...[
-                                        Text(
-                                          '${AppLocalizations.of(context).translate('subtotal')}: ${(bill.total + bill.discountApplied).toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade700,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${AppLocalizations.of(context).translate('discount')}: ${bill.discountApplied.toStringAsFixed(2)}',
-                                          style: const TextStyle(
-                                            color: Colors.red,
-                                            fontStyle: FontStyle.italic,
-                                          ),
-                                        ),
-                                      ],
-                                      Text(
-                                        bill.total.toStringAsFixed(2),
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green,
-                                        ),
+                                      FutureBuilder<List<BillItem>>(
+                                        future: DatabaseHelper.instance
+                                            .getBillItems(bill.id!),
+                                        builder: (context, snapshot) {
+                                          if (!snapshot.hasData)
+                                            return const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            );
+                                          if (snapshot.data!.isEmpty)
+                                            return const SizedBox.shrink();
+                                          return SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 20.0,
+                                                    vertical: 8.0,
+                                                  ),
+                                              child: DataTable(
+                                                headingRowColor:
+                                                    WidgetStateProperty.resolveWith(
+                                                      (states) =>
+                                                          Colors.grey.shade50,
+                                                    ),
+                                                columns: [
+                                                  DataColumn(
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      ).translate('name'),
+                                                    ),
+                                                  ),
+                                                  DataColumn(
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      ).translate('item_size'),
+                                                    ),
+                                                  ),
+                                                  DataColumn(
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      ).translate('item_price'),
+                                                    ),
+                                                  ),
+                                                  DataColumn(
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      ).translate(
+                                                        'quantity_dozens',
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataColumn(
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      ).translate('total'),
+                                                    ),
+                                                  ),
+                                                ],
+                                                rows: snapshot.data!
+                                                    .map(
+                                                      (item) => DataRow(
+                                                        cells: [
+                                                          DataCell(
+                                                            Text(item.itemName),
+                                                          ),
+                                                          DataCell(
+                                                            Text(item.itemSize),
+                                                          ),
+                                                          DataCell(
+                                                            Text(
+                                                              item.itemPrice
+                                                                  .toStringAsFixed(
+                                                                    2,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                          DataCell(
+                                                            Text(
+                                                              item.quantityDozens
+                                                                  .toString(),
+                                                            ),
+                                                          ),
+                                                          DataCell(
+                                                            Text(
+                                                              item.total
+                                                                  .toStringAsFixed(
+                                                                    2,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    )
+                                                    .toList(),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(width: 16),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.print,
-                                          color: Colors.black87,
-                                        ),
-                                        tooltip: AppLocalizations.of(
-                                          context,
-                                        ).translate('print_pdf'),
-                                        onPressed: () {
-                                          PdfGenerator.printBill(
-                                            context,
-                                            bill,
-                                            _currentCustomer,
-                                          );
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.edit_outlined,
-                                          color: Colors.orange,
-                                        ),
-                                        tooltip: AppLocalizations.of(
-                                          context,
-                                        ).translate('edit'),
-                                        onPressed: () async {
-                                          await Navigator.pushNamed(
-                                            context,
-                                            '/create_bill',
-                                            arguments: bill,
-                                          );
-                                          _loadHistory();
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red,
-                                        ),
-                                        tooltip: AppLocalizations.of(
-                                          context,
-                                        ).translate('delete'),
-                                        onPressed: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (ctx) => AlertDialog(
-                                              title: Text(
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        _buildSection(
+                          title: 'Drafts',
+                          icon: Icons.drafts,
+                          color: Colors.orange,
+                          isEmpty: _drafts.isEmpty,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _drafts.length,
+                            itemBuilder: (context, index) {
+                              final draft = _drafts[index];
+                              return Card(
+                                elevation: 2,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: ListTile(
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.drafts,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    '${draft.items.length} items',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    DateFormat(
+                                      'MMM dd, yyyy',
+                                    ).format(draft.dateCreated),
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            ).translate('delete'),
+                                          ),
+                                          content: const Text(
+                                            'Are you sure you want to delete this draft?',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx),
+                                              child: Text(
+                                                AppLocalizations.of(
+                                                  context,
+                                                ).translate('cancel'),
+                                              ),
+                                            ),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              onPressed: () async {
+                                                await DraftService.deleteDraft(
+                                                  draft.id,
+                                                );
+                                                Navigator.pop(ctx);
+                                                _loadHistory();
+                                              },
+                                              child: Text(
                                                 AppLocalizations.of(
                                                   context,
                                                 ).translate('delete'),
                                               ),
-                                              content: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                ).translate(
-                                                  'delete_bill_confirm',
-                                                ),
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(ctx),
-                                                  child: Text(
-                                                    AppLocalizations.of(
-                                                      context,
-                                                    ).translate('cancel'),
-                                                  ),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () async {
-                                                    await Provider.of<
-                                                          BillProvider
-                                                        >(
-                                                          context,
-                                                          listen: false,
-                                                        )
-                                                        .deleteBill(
-                                                          bill.id!,
-                                                          bill.customerId,
-                                                          bill.total,
-                                                        );
-                                                    Navigator.pop(ctx);
-                                                    _loadHistory();
-                                                  },
-                                                  child: Text(
-                                                    AppLocalizations.of(
-                                                      context,
-                                                    ).translate('delete'),
-                                                    style: const TextStyle(
-                                                      color: Colors.red,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              children: [
-                                FutureBuilder<List<BillItem>>(
-                                  future: DatabaseHelper.instance.getBillItems(
-                                    bill.id!,
-                                  ),
-                                  builder: (context, snapshot) {
-                                    if (!snapshot.hasData)
-                                      return const Center(
-                                        child: CircularProgressIndicator(),
-                                      );
-                                    if (snapshot.data!.isEmpty)
-                                      return const SizedBox.shrink();
-                                    return SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20.0,
-                                          vertical: 8.0,
-                                        ),
-                                        child: DataTable(
-                                          headingRowColor:
-                                              WidgetStateProperty.resolveWith(
-                                                (states) => Colors.grey.shade50,
-                                              ),
-                                          columns: [
-                                            DataColumn(
-                                              label: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                ).translate('name'),
-                                              ),
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                ).translate('item_size'),
-                                              ),
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                ).translate('item_price'),
-                                              ),
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                ).translate('quantity_dozens'),
-                                              ),
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                ).translate('total'),
-                                              ),
                                             ),
                                           ],
-                                          rows: snapshot.data!
-                                              .map(
-                                                (item) => DataRow(
-                                                  cells: [
-                                                    DataCell(
-                                                      Text(item.itemName),
-                                                    ),
-                                                    DataCell(
-                                                      Text(item.itemSize),
-                                                    ),
-                                                    DataCell(
-                                                      Text(
-                                                        item.itemPrice
-                                                            .toStringAsFixed(2),
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      Text(
-                                                        item.quantityDozens
-                                                            .toString(),
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      Text(
-                                                        item.total
-                                                            .toStringAsFixed(2),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              )
-                                              .toList(),
                                         ),
-                                      ),
+                                      );
+                                    },
+                                  ),
+                                  onTap: () async {
+                                    await Navigator.pushNamed(
+                                      context,
+                                      '/create_bill',
+                                      arguments: draft,
                                     );
+                                    _loadHistory();
                                   },
                                 ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                Container(width: 1, color: Colors.grey.shade300),
-                Expanded(
-                  flex: 2,
-                  child: _buildSection(
-                    title: 'Drafts',
-                    icon: Icons.drafts,
-                    color: Colors.orange,
-                    isEmpty: _drafts.isEmpty,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _drafts.length,
-                      itemBuilder: (context, index) {
-                        final draft = _drafts[index];
-                        return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
-                              child: Icon(Icons.drafts, color: Colors.orange.shade700),
-                            ),
-                            title: Text('${draft.items.length} items', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(DateFormat('MMM dd, yyyy').format(draft.dateCreated)),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await DraftService.deleteDraft(draft.id);
-                                _loadHistory();
-                              },
-                            ),
-                            onTap: () async {
-                              await Navigator.pushNamed(context, '/create_bill', arguments: draft);
-                              _loadHistory();
+                              );
                             },
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                Container(width: 1, color: Colors.grey.shade300),
-                Expanded(
-                  flex: 2,
-                  child: _buildSection(
-                    title: AppLocalizations.of(context).translate('payments'),
-                    icon: Icons.payment,
-                    color: Colors.green,
-                    isEmpty: _payments.isEmpty,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _payments.length,
-                      itemBuilder: (context, index) {
-                        final payment = _payments[index];
-                        return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.green.shade100,
-                                child: const Icon(
-                                  Icons.money,
-                                  color: Colors.green,
+                        ),
+                        _buildSection(
+                          title: AppLocalizations.of(
+                            context,
+                          ).translate('payments'),
+                          icon: Icons.payment,
+                          color: Colors.green,
+                          isEmpty: _payments.isEmpty,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _payments.length,
+                            itemBuilder: (context, index) {
+                              final payment = _payments[index];
+                              return Card(
+                                elevation: 2,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                              ),
-                              title: Text(
-                                payment.amount.toStringAsFixed(2),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  color: Colors.green,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    DateFormat(
-                                      'yyyy-MM-dd HH:mm',
-                                    ).format(payment.date),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8.0,
                                   ),
-                                  if (payment.note.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4.0),
-                                      child: Text(
-                                        '${AppLocalizations.of(context).translate('note')}: ${payment.note}',
-                                        style: const TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                        ),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.green.shade100,
+                                      child: const Icon(
+                                        Icons.money,
+                                        color: Colors.green,
                                       ),
                                     ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit_outlined,
-                                      color: Colors.orange,
+                                    title: Text(
+                                      payment.amount.toStringAsFixed(2),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: Colors.green,
+                                      ),
                                     ),
-                                    onPressed: () => _editPayment(payment),
-                                    tooltip: AppLocalizations.of(
-                                      context,
-                                    ).translate('edit'),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          DateFormat(
+                                            'yyyy-MM-dd HH:mm',
+                                          ).format(payment.date),
+                                        ),
+                                        if (payment.note.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 4.0,
+                                            ),
+                                            child: Text(
+                                              '${AppLocalizations.of(context).translate('note')}: ${payment.note}',
+                                              style: const TextStyle(
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                    onPressed: () => _deletePayment(payment),
-                                    tooltip: AppLocalizations.of(
-                                      context,
-                                    ).translate('delete'),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit_outlined,
+                                            color: Colors.orange,
+                                          ),
+                                          onPressed: () =>
+                                              _editPayment(payment),
+                                          tooltip: AppLocalizations.of(
+                                            context,
+                                          ).translate('edit'),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              _deletePayment(payment),
+                                          tooltip: AppLocalizations.of(
+                                            context,
+                                          ).translate('delete'),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
     );
   }

@@ -466,8 +466,10 @@ class PdfGenerator {
               child: pw.Column(
                 children: [
                    pw.Container(
-                     color: PdfColors.grey300,
-                     decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                     decoration: const pw.BoxDecoration(
+                       color: PdfColors.grey300,
+                       border: pw.Border(bottom: pw.BorderSide())
+                     ),
                      child: pw.Row(children: headerCells),
                    ),
                    ...groupRows,

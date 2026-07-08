@@ -509,7 +509,7 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
           content: Text(AppLocalizations.of(context).translate('bill_created')),
         ),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     }
   }
 

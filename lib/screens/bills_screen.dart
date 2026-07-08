@@ -57,10 +57,30 @@ class _BillsScreenState extends State<BillsScreen> {
                   subtitle: Text('${draft.items.length} items - ${DateFormat('yyyy-MM-dd HH:mm').format(draft.dateCreated)}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () async {
-                      await DraftService.deleteDraft(draft.id);
-                      Navigator.pop(context);
-                      _showDraftsDialog(context);
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: Text(AppLocalizations.of(context).translate('delete')),
+                          content: const Text('Are you sure you want to delete this draft?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text(AppLocalizations.of(context).translate('cancel')),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                              onPressed: () async {
+                                await DraftService.deleteDraft(draft.id);
+                                Navigator.pop(ctx);
+                                Navigator.pop(context);
+                                _showDraftsDialog(context);
+                              },
+                              child: Text(AppLocalizations.of(context).translate('delete')),
+                            ),
+                          ],
+                        ),
+                      );
                     },
                   ),
                   onTap: () {
