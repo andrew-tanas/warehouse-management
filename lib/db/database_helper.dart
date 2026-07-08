@@ -53,7 +53,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path, 
-      version: 7, 
+      version: 9, 
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -100,6 +100,9 @@ CREATE TABLE IF NOT EXISTS item_history (
       try { await db.execute('ALTER TABLE bills RENAME COLUMN vendorName TO customerName'); } catch (_) {}
       try { await db.execute('ALTER TABLE payments RENAME COLUMN vendorId TO customerId'); } catch (_) {}
     }
+    if (oldVersion < 9) {
+      try { await db.execute('ALTER TABLE items ADD COLUMN category TEXT NOT NULL DEFAULT "men"'); } catch (_) {}
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -113,6 +116,7 @@ CREATE TABLE items (
   id $idType,
   name $textType,
   size $textType,
+  category $textType DEFAULT 'men',
   retailPrice $realType,
   wholesalePrice $realType,
   customPrice REAL,

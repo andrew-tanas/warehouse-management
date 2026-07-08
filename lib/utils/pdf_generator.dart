@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/bill.dart';
+import 'sort_utils.dart';
 import '../models/bill_item.dart';
 import '../db/database_helper.dart';
 import 'package:intl/intl.dart';
@@ -387,6 +388,14 @@ class PdfGenerator {
     final fontBold = await PdfGoogleFonts.cairoBold();
 
     final pdf = pw.Document();
+
+    items = List.from(items);
+    items.sort((a, b) {
+      int cmp = compareCategories(a.category, b.category);
+      if (cmp == 0) cmp = a.name.compareTo(b.name);
+      if (cmp == 0) cmp = compareSizes(a.size, b.size);
+      return cmp;
+    });
 
     Map<String, List<Item>> groupedItems = {};
     for (var item in items) {

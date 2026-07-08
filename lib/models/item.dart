@@ -2,6 +2,7 @@ class Item {
   int? id;
   String name;
   String size;
+  String category;
   double retailPrice;
   double wholesalePrice;
   double? customPrice;
@@ -11,6 +12,7 @@ class Item {
     this.id,
     required this.name,
     required this.size,
+    required this.category,
     required this.retailPrice,
     required this.wholesalePrice,
     this.customPrice,
@@ -22,6 +24,7 @@ class Item {
       'id': id,
       'name': name,
       'size': size,
+      'category': category,
       'retailPrice': retailPrice,
       'wholesalePrice': wholesalePrice,
       'customPrice': customPrice,
@@ -34,6 +37,7 @@ class Item {
       id: map['id'],
       name: map['name'],
       size: map['size'],
+      category: map['category'] ?? 'men', // default category
       retailPrice: map['retailPrice'],
       wholesalePrice: map['wholesalePrice'],
       customPrice: map['customPrice'],

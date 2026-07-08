@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'item_history_screen.dart';
 import '../providers/locale_provider.dart';
 import '../utils/pdf_generator.dart';
+import '../utils/sort_utils.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});
@@ -18,8 +19,10 @@ class ItemsScreen extends StatefulWidget {
 
 class _ItemsScreenState extends State<ItemsScreen> {
   String _searchQuery = '';
-  int? _sortColumnIndex;
+  String? _filterCategory;
+  int? _sortColumnIndex = 1;
   bool _sortAscending = true;
+  int _rowsPerPage = PaginatedDataTable.defaultRowsPerPage;
 
   int? _editingItemId;
   String? _editingPriceType;
@@ -40,21 +43,24 @@ class _ItemsScreenState extends State<ItemsScreen> {
     double wholesalePrice = item?.wholesalePrice ?? 0.0;
     double? customPrice = item?.customPrice;
     double stockAmount = item?.stockAmount ?? 0.0;
+    String category = item?.category ?? 'men';
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            item == null
-                ? AppLocalizations.of(context).translate('add_item')
-                : AppLocalizations.of(context).translate('edit'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Form(
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                item == null
+                    ? AppLocalizations.of(context).translate('add_item')
+                    : AppLocalizations.of(context).translate('edit'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Form(
             key: formKey,
             child: SingleChildScrollView(
               child: SizedBox(
@@ -94,6 +100,36 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       validator: (val) =>
                           val == null || val.isEmpty ? 'Required' : null,
                       onSaved: (val) => size = val!,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: category,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(
+                          context,
+                        ).translate('category'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                      items: ['men', 'women', 'kids'].map((String val) {
+                        return DropdownMenuItem<String>(
+                          value: val,
+                          child: Text(
+                            AppLocalizations.of(context).translate(val),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            category = val;
+                          });
+                        }
+                      },
+                      onSaved: (val) => category = val ?? 'men',
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -228,7 +264,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
                 if (formKey.currentState!.validate()) {
                   formKey.currentState!.save();
 
@@ -261,22 +297,39 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     id: item?.id,
                     name: name,
                     size: size,
+                    category: category,
                     retailPrice: retailPrice,
                     wholesalePrice: wholesalePrice,
                     customPrice: customPrice,
                     stockAmount: stockAmount,
                   );
-                  if (item == null) {
-                    provider.addItem(newItem);
-                  } else {
-                    provider.updateItem(newItem);
+                  
+                  try {
+                    if (item == null) {
+                      await provider.addItem(newItem);
+                    } else {
+                      await provider.updateItem(newItem);
+                    }
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to save item: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
-                  Navigator.of(context).pop();
                 }
               },
               child: Text(AppLocalizations.of(context).translate('save')),
             ),
           ],
+        );
+          },
         );
       },
     );
@@ -438,6 +491,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       id: item.id,
       name: item.name,
       size: item.size,
+      category: item.category,
       retailPrice: priceType == 'retail' ? newPrice : item.retailPrice,
       wholesalePrice: priceType == 'wholesale' ? newPrice : item.wholesalePrice,
       customPrice: priceType == 'custom'
@@ -473,6 +527,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
       'custom_price',
     ];
     List<String> selectedPrices = ['retail_price'];
+    List<String> categories = ['men', 'women', 'kids'];
+    List<String> selectedCategories = List.from(categories);
     List<Item> selectedItemsForPrint = [];
     TextEditingController? autocompleteController;
 
@@ -491,14 +547,15 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       displayStringForOption: (Item option) =>
                           '${option.name} - ${option.size}',
                       optionsBuilder: (TextEditingValue textEditingValue) {
-                        if (textEditingValue.text.isEmpty) {
-                          return items;
-                        }
-                        return items.where(
-                          (item) => ('${item.name} - ${item.size}')
+                        var filtered = items.where((item) {
+                          if (!selectedCategories.contains(item.category)) return false;
+                          if (selectedItemsForPrint.any((i) => i.id == item.id)) return false;
+                          if (textEditingValue.text.isEmpty) return true;
+                          return ('${item.name} - ${item.size}')
                               .toLowerCase()
-                              .contains(textEditingValue.text.toLowerCase()),
-                        );
+                              .contains(textEditingValue.text.toLowerCase());
+                        }).toList();
+                        return filtered;
                       },
                       onSelected: (Item selection) {
                         setState(() {
@@ -603,26 +660,79 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         },
                       );
                     }),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${AppLocalizations.of(context).translate('category')}:',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Wrap(
+                          children: categories.map((cat) {
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Checkbox(
+                                  value: selectedCategories.contains(cat),
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        selectedCategories.add(cat);
+                                      } else {
+                                        selectedCategories.remove(cat);
+                                      }
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  AppLocalizations.of(context).translate(cat),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(AppLocalizations.of(context).translate('cancel')),
+                  child: Text(
+                    AppLocalizations.of(context).translate('cancel'),
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    List<Item> finalItemsToPrint =
-                        selectedItemsForPrint.isNotEmpty
+                  onPressed: () {
+                    List<Item> itemsToPrint = selectedItemsForPrint.isNotEmpty
                         ? selectedItemsForPrint
                         : items;
-                    await PdfGenerator.printItemsList(
-                      context,
-                      finalItemsToPrint,
-                      ['name', 'size', ...selectedPrices],
-                    );
+                    itemsToPrint = itemsToPrint
+                        .where(
+                          (item) => selectedCategories.contains(item.category),
+                        )
+                        .toList();
+                    if (itemsToPrint.isEmpty) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context).translate('no_items'),
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.of(context).pop();
+                    PdfGenerator.printItemsList(context, itemsToPrint, [
+                      'name',
+                      'size',
+                      ...selectedPrices,
+                    ]);
                   },
                   child: Text(
                     AppLocalizations.of(context).translate('print_pdf'),
@@ -663,6 +773,39 @@ class _ItemsScreenState extends State<ItemsScreen> {
               child: Row(
                 children: [
                   Expanded(
+                    child: DropdownButtonFormField<String?>(
+                      value: _filterCategory,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(
+                          context,
+                        ).translate('category'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        prefixIcon: const Icon(Icons.filter_list),
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('All')),
+                        ...['men', 'women', 'kids'].map((String val) {
+                          return DropdownMenuItem<String?>(
+                            value: val,
+                            child: Text(
+                              AppLocalizations.of(context).translate(val),
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          _filterCategory = val;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
                     child: TextField(
                       decoration: InputDecoration(
                         labelText: 'Search items...',
@@ -697,21 +840,19 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           DropdownMenuItem(
                             value: 1,
                             child: Text(
-                              AppLocalizations.of(context).translate('name'),
+                              '${AppLocalizations.of(context).translate('category')} > ${AppLocalizations.of(context).translate('name')} > ${AppLocalizations.of(context).translate('size')}',
                             ),
                           ),
                           DropdownMenuItem(
                             value: 2,
                             child: Text(
-                              AppLocalizations.of(context).translate('size'),
+                              AppLocalizations.of(context).translate('name'),
                             ),
                           ),
                           DropdownMenuItem(
                             value: 3,
                             child: Text(
-                              AppLocalizations.of(
-                                context,
-                              ).translate('retail_price'),
+                              AppLocalizations.of(context).translate('size'),
                             ),
                           ),
                           DropdownMenuItem(
@@ -719,7 +860,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             child: Text(
                               AppLocalizations.of(
                                 context,
-                              ).translate('wholesale_price'),
+                              ).translate('retail_price'),
                             ),
                           ),
                           DropdownMenuItem(
@@ -727,11 +868,19 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             child: Text(
                               AppLocalizations.of(
                                 context,
-                              ).translate('custom_price'),
+                              ).translate('wholesale_price'),
                             ),
                           ),
                           DropdownMenuItem(
                             value: 6,
+                            child: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).translate('custom_price'),
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 7,
                             child: Text(
                               AppLocalizations.of(
                                 context,
@@ -777,25 +926,32 @@ class _ItemsScreenState extends State<ItemsScreen> {
                               cmp = a.id!.compareTo(b.id!);
                               break;
                             case 1:
-                              cmp = a.name.compareTo(b.name);
+                              cmp = compareCategories(a.category, b.category);
+                              if (cmp == 0) {
+                                cmp = a.name.compareTo(b.name);
+                                if (cmp == 0) {
+                                  cmp = compareSizes(a.size, b.size);
+                                }
+                              }
                               break;
                             case 2:
-                              cmp = a.size.compareTo(b.size);
+                              cmp = a.name.compareTo(b.name);
                               break;
                             case 3:
-                              cmp = a.retailPrice.compareTo(b.retailPrice);
+                              cmp = compareSizes(a.size, b.size);
                               break;
                             case 4:
-                              cmp = a.wholesalePrice.compareTo(
-                                b.wholesalePrice,
-                              );
+                              cmp = a.retailPrice.compareTo(b.retailPrice);
                               break;
                             case 5:
+                              cmp = a.wholesalePrice.compareTo(b.wholesalePrice);
+                              break;
+                            case 6:
                               cmp = (a.customPrice ?? 0).compareTo(
                                 b.customPrice ?? 0,
                               );
                               break;
-                            case 6:
+                            case 7:
                               cmp = a.stockAmount.compareTo(b.stockAmount);
                               break;
                           }
@@ -850,6 +1006,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     );
                   }
                   List<Item> filteredItems = provider.items.where((item) {
+                    if (_filterCategory != null &&
+                        item.category != _filterCategory)
+                      return false;
                     return item.name.toLowerCase().contains(_searchQuery) ||
                         item.size.toLowerCase().contains(_searchQuery) ||
                         item.id.toString().contains(_searchQuery);
@@ -863,27 +1022,48 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           cmp = a.id!.compareTo(b.id!);
                           break;
                         case 1:
-                          cmp = a.name.compareTo(b.name);
+                          cmp = compareCategories(a.category, b.category);
+                          if (cmp == 0) {
+                            cmp = a.name.compareTo(b.name);
+                            if (cmp == 0) {
+                              cmp = compareSizes(a.size, b.size);
+                            }
+                          }
                           break;
                         case 2:
-                          cmp = a.size.compareTo(b.size);
+                          cmp = a.name.compareTo(b.name);
                           break;
                         case 3:
-                          cmp = a.retailPrice.compareTo(b.retailPrice);
+                          cmp = compareSizes(a.size, b.size);
                           break;
                         case 4:
-                          cmp = a.wholesalePrice.compareTo(b.wholesalePrice);
+                          cmp = a.retailPrice.compareTo(b.retailPrice);
                           break;
                         case 5:
+                          cmp = a.wholesalePrice.compareTo(b.wholesalePrice);
+                          break;
+                        case 6:
                           cmp = (a.customPrice ?? 0).compareTo(
                             b.customPrice ?? 0,
                           );
                           break;
-                        case 6:
+                        case 7:
                           cmp = a.stockAmount.compareTo(b.stockAmount);
                           break;
                       }
                       return _sortAscending ? cmp : -cmp;
+                    });
+                  } else {
+                    filteredItems.sort((a, b) {
+                      int catOrder(String cat) {
+                        if (cat == 'men') return 0;
+                        if (cat == 'women') return 1;
+                        if (cat == 'kids') return 2;
+                        return 3;
+                      }
+                      int cmp = catOrder(a.category).compareTo(catOrder(b.category));
+                      if (cmp == 0) cmp = a.name.compareTo(b.name);
+                      return cmp;
                     });
                   }
 
@@ -903,23 +1083,46 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           padding: const EdgeInsets.only(bottom: 80.0),
                           child: LayoutBuilder(
                             builder: (context, constraints) {
-                              return SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minWidth: constraints.minWidth,
+                              return ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: constraints.minWidth,
+                                ),
+                                child: Theme(
+                                  data: Theme.of(context).copyWith(
+                                    cardColor: Colors.transparent,
+                                    cardTheme: const CardThemeData(
+                                      elevation: 0,
+                                      margin: EdgeInsets.zero,
+                                      color: Colors.transparent,
+                                    ),
                                   ),
-                                  child: DataTable(
+                                  child: PaginatedDataTable(
+                                    key: ValueKey('$_searchQuery-$_filterCategory-$_sortColumnIndex'),
                                     showCheckboxColumn: false,
-                                    headingRowColor:
-                                        WidgetStateProperty.resolveWith(
-                                          (states) => Colors.grey.shade50,
-                                        ),
+                                    rowsPerPage: _rowsPerPage,
+                                    availableRowsPerPage: const [10, 20, 50, 100],
+                                    onRowsPerPageChanged: (val) {
+                                      if (val != null) {
+                                        setState(() {
+                                          _rowsPerPage = val;
+                                        });
+                                      }
+                                    },
                                     columns: [
                                       const DataColumn(
                                         label: Text(
                                           'ID',
                                           style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          ).translate('category'),
+                                          style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -995,169 +1198,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                         ),
                                       ),
                                     ],
-                                    rows: filteredItems.map((item) {
-                                      return DataRow(
-                                        onSelectChanged: (_) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  ItemHistoryScreen(item: item),
-                                            ),
-                                          );
-                                        },
-                                        cells: [
-                                          DataCell(Text(item.id.toString())),
-                                          DataCell(
-                                            Text(
-                                              item.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                          DataCell(Text(item.size)),
-                                          DataCell(
-                                            _buildPriceCell(
-                                              item,
-                                              'retail',
-                                              item.retailPrice,
-                                              Colors.green,
-                                            ),
-                                          ),
-                                          DataCell(
-                                            _buildPriceCell(
-                                              item,
-                                              'wholesale',
-                                              item.wholesalePrice,
-                                              Colors.blue,
-                                            ),
-                                          ),
-                                          DataCell(
-                                            _buildPriceCell(
-                                              item,
-                                              'custom',
-                                              item.customPrice,
-                                              Colors.orange,
-                                            ),
-                                          ),
-                                          DataCell(
-                                            Text(item.stockAmount.toString()),
-                                          ),
-                                          DataCell(
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.add_circle_outline,
-                                                    color: Colors.green,
-                                                  ),
-                                                  tooltip: 'Add Stock',
-                                                  onPressed: () =>
-                                                      _showStockDialog(
-                                                        item,
-                                                        true,
-                                                      ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.remove_circle_outline,
-                                                    color: Colors.orange,
-                                                  ),
-                                                  tooltip: 'Reduce Stock',
-                                                  onPressed: () =>
-                                                      _showStockDialog(
-                                                        item,
-                                                        false,
-                                                      ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.edit_outlined,
-                                                    color: Colors.indigo,
-                                                  ),
-                                                  tooltip: 'Edit',
-                                                  onPressed: () =>
-                                                      _showItemDialog(item),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.delete_outline,
-                                                    color: Colors.red,
-                                                  ),
-                                                  tooltip: 'Delete',
-                                                  onPressed: () {
-                                                    showDialog(
-                                                      context: context,
-                                                      builder: (context) => AlertDialog(
-                                                        title: Text(
-                                                          AppLocalizations.of(
-                                                            context,
-                                                          ).translate('delete'),
-                                                        ),
-                                                        content: Text(
-                                                          'Are you sure you want to delete ${item.name}?',
-                                                        ),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () =>
-                                                                Navigator.pop(
-                                                                  context,
-                                                                ),
-                                                            child: Text(
-                                                              AppLocalizations.of(
-                                                                context,
-                                                              ).translate(
-                                                                'cancel',
-                                                              ),
-                                                              style:
-                                                                  const TextStyle(
-                                                                    color: Colors
-                                                                        .grey,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                          ElevatedButton(
-                                                            style:
-                                                                ElevatedButton.styleFrom(
-                                                                  backgroundColor:
-                                                                      Colors
-                                                                          .red,
-                                                                ),
-                                                            onPressed: () {
-                                                              provider
-                                                                  .deleteItem(
-                                                                    item.id!,
-                                                                  );
-                                                              Navigator.pop(
-                                                                context,
-                                                              );
-                                                            },
-                                                            child: Text(
-                                                              AppLocalizations.of(
-                                                                context,
-                                                              ).translate(
-                                                                'delete',
-                                                              ),
-                                                              style:
-                                                                  const TextStyle(
-                                                                    color: Colors
-                                                                        .white,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }).toList(),
+                                    source: ItemDataSource(
+                                      filteredItems,
+                                      context,
+                                      this,
+                                      provider,
+                                    ),
                                   ),
                                 ),
                               );
@@ -1175,4 +1221,126 @@ class _ItemsScreenState extends State<ItemsScreen> {
       ),
     );
   }
+}
+
+class ItemDataSource extends DataTableSource {
+  final List<Item> items;
+  final BuildContext context;
+  final _ItemsScreenState state;
+  final ItemProvider provider;
+
+  ItemDataSource(this.items, this.context, this.state, this.provider);
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= items.length) return null;
+    final item = items[index];
+    return DataRow(
+      onSelectChanged: (_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ItemHistoryScreen(item: item)),
+        );
+      },
+      cells: [
+        DataCell(Text(item.id.toString())),
+        DataCell(Text(AppLocalizations.of(context).translate(item.category))),
+        DataCell(
+          Text(item.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ),
+        DataCell(Text(item.size)),
+        DataCell(
+          state._buildPriceCell(item, 'retail', item.retailPrice, Colors.green),
+        ),
+        DataCell(
+          state._buildPriceCell(
+            item,
+            'wholesale',
+            item.wholesalePrice,
+            Colors.blue,
+          ),
+        ),
+        DataCell(
+          state._buildPriceCell(
+            item,
+            'custom',
+            item.customPrice,
+            Colors.orange,
+          ),
+        ),
+        DataCell(Text(item.stockAmount.toString())),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                tooltip: 'Add Stock',
+                onPressed: () => state._showStockDialog(item, true),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.remove_circle_outline,
+                  color: Colors.orange,
+                ),
+                tooltip: 'Reduce Stock',
+                onPressed: () => state._showStockDialog(item, false),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, color: Colors.indigo),
+                tooltip: 'Edit',
+                onPressed: () => state._showItemDialog(item),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: 'Delete',
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(
+                        AppLocalizations.of(context).translate('delete'),
+                      ),
+                      content: Text(
+                        'Are you sure you want to delete ${item.name}?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            AppLocalizations.of(context).translate('cancel'),
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          onPressed: () {
+                            provider.deleteItem(item.id!);
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            AppLocalizations.of(context).translate('delete'),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+  @override
+  int get rowCount => items.length;
+  @override
+  int get selectedRowCount => 0;
 }
