@@ -12,7 +12,7 @@ class CustomerProvider with ChangeNotifier {
 
   Future<void> fetchCustomers() async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
     
     try {
       _customers = await DatabaseHelper.instance.getCustomers();
