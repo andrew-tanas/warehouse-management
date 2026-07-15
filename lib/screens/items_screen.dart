@@ -1084,6 +1084,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(
                                       minWidth: constraints.maxWidth,
+                                      maxWidth: constraints.maxWidth > 1200 ? constraints.maxWidth : 1200,
                                     ),
                                     child: Theme(
                                       data: Theme.of(context).copyWith(
