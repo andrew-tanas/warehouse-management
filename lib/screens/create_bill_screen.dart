@@ -36,7 +36,6 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
   }
 
   @override
@@ -54,12 +53,12 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
         _discountPercent = args.discountPercent;
         _discountController.text = _discountPercent.toStringAsFixed(2);
       }
+      _loadData(args);
       _isInit = true;
     }
   }
 
-  Future<void> _loadData() async {
-    final args = ModalRoute.of(context)?.settings.arguments;
+  Future<void> _loadData(dynamic args) async {
     if (args is DraftBill && args.id.startsWith('bill_')) {
       int originalId = int.parse(args.id.substring(5));
       final allBills = await DatabaseHelper.instance.getBills();
