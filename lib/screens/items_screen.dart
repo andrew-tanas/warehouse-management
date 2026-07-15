@@ -23,6 +23,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   int? _sortColumnIndex = 1;
   bool _sortAscending = true;
   int _rowsPerPage = PaginatedDataTable.defaultRowsPerPage;
+  final ScrollController _horizontalScrollController = ScrollController();
 
   int? _editingItemId;
   String? _editingPriceType;
@@ -33,6 +34,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
     Future.microtask(
       () => Provider.of<ItemProvider>(context, listen: false).loadItems(),
     );
+  }
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
   }
 
   void _showItemDialog([Item? item]) {
@@ -1079,8 +1086,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             builder: (context, constraints) {
                               return Scrollbar(
                                 thumbVisibility: true,
+                                controller: _horizontalScrollController,
                                 child: SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
+                                  controller: _horizontalScrollController,
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(
                                       minWidth: constraints.maxWidth,
