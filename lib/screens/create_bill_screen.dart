@@ -59,6 +59,15 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
   }
 
   Future<void> _loadData() async {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is DraftBill && args.id.startsWith('bill_')) {
+      int originalId = int.parse(args.id.substring(5));
+      final allBills = await DatabaseHelper.instance.getBills();
+      try {
+        _editingBill = allBills.firstWhere((b) => b.id == originalId);
+      } catch (e) {}
+    }
+
     final customers = await DatabaseHelper.instance.getCustomers();
     final items = await DatabaseHelper.instance.getItems();
     items.sort((a, b) {
@@ -69,7 +78,7 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
       return cmp;
     });
 
-    if (_editingBill != null) {
+    if (_editingBill != null && args is! DraftBill) {
       final billItems = await DatabaseHelper.instance.getBillItems(
         _editingBill!.id!,
       );
@@ -523,11 +532,16 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop && _editingBill == null && result != true) {
+        if (didPop && result != true) {
           if (_billItems.isNotEmpty || _selectedCustomer != null) {
-            final draftId = (ModalRoute.of(context)?.settings.arguments is DraftBill)
-                ? (ModalRoute.of(context)!.settings.arguments as DraftBill).id
-                : DateTime.now().millisecondsSinceEpoch.toString();
+            String draftId;
+            if (ModalRoute.of(context)?.settings.arguments is DraftBill) {
+              draftId = (ModalRoute.of(context)!.settings.arguments as DraftBill).id;
+            } else if (_editingBill != null) {
+              draftId = 'bill_${_editingBill!.id}';
+            } else {
+              draftId = DateTime.now().millisecondsSinceEpoch.toString();
+            }
                 
             DraftService.saveDraft(DraftBill(
               id: draftId,
@@ -538,9 +552,10 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
             ));
           }
         } else if (didPop && result == true) {
-           // If saved successfully, and we were editing a draft, delete the draft
            if (ModalRoute.of(context)?.settings.arguments is DraftBill) {
              DraftService.deleteDraft((ModalRoute.of(context)!.settings.arguments as DraftBill).id);
+           } else if (_editingBill != null) {
+             DraftService.deleteDraft('bill_${_editingBill!.id}');
            }
         }
       },

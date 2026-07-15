@@ -114,7 +114,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         filled: true,
                         fillColor: Colors.grey.shade50,
                       ),
-                      items: ['men', 'women', 'kids'].map((String val) {
+                      items: ['men', 'women', 'boys', 'girls'].map((String val) {
                         return DropdownMenuItem<String>(
                           value: val,
                           child: Text(
@@ -527,7 +527,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       'custom_price',
     ];
     List<String> selectedPrices = ['retail_price'];
-    List<String> categories = ['men', 'women', 'kids'];
+    List<String> categories = ['men', 'women', 'boys', 'girls'];
     List<String> selectedCategories = List.from(categories);
     List<Item> selectedItemsForPrint = [];
     TextEditingController? autocompleteController;
@@ -788,7 +788,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       ),
                       items: [
                         const DropdownMenuItem(value: null, child: Text('All')),
-                        ...['men', 'women', 'kids'].map((String val) {
+                        ...['men', 'women', 'boys', 'girls'].map((String val) {
                           return DropdownMenuItem<String?>(
                             value: val,
                             child: Text(
@@ -1055,13 +1055,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     });
                   } else {
                     filteredItems.sort((a, b) {
-                      int catOrder(String cat) {
-                        if (cat == 'men') return 0;
-                        if (cat == 'women') return 1;
-                        if (cat == 'kids') return 2;
-                        return 3;
-                      }
-                      int cmp = catOrder(a.category).compareTo(catOrder(b.category));
+                      int cmp = compareCategories(a.category, b.category);
                       if (cmp == 0) cmp = a.name.compareTo(b.name);
                       return cmp;
                     });
@@ -1083,12 +1077,16 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           padding: const EdgeInsets.only(bottom: 80.0),
                           child: LayoutBuilder(
                             builder: (context, constraints) {
-                              return ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minWidth: constraints.minWidth,
-                                ),
-                                child: Theme(
-                                  data: Theme.of(context).copyWith(
+                              return Scrollbar(
+                                thumbVisibility: true,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: Theme(
+                                      data: Theme.of(context).copyWith(
                                     cardColor: Colors.transparent,
                                     cardTheme: const CardThemeData(
                                       elevation: 0,
@@ -1203,6 +1201,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                       context,
                                       this,
                                       provider,
+                                    ),
+                                      ),
                                     ),
                                   ),
                                 ),

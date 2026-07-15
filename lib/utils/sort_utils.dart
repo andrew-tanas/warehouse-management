@@ -56,8 +56,9 @@ int compareCategories(String a, String b) {
   int catOrder(String cat) {
     if (cat == 'men') return 0;
     if (cat == 'women') return 1;
-    if (cat == 'kids') return 2;
-    return 3;
+    if (cat == 'boys') return 2;
+    if (cat == 'girls') return 3;
+    return 4;
   }
   return catOrder(a).compareTo(catOrder(b));
 }
